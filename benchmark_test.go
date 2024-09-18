@@ -4,6 +4,7 @@ import (
 	"net/http"
 	"os"
 	"testing"
+	"time"
 
 	"github.com/frobware/comptime"
 )
@@ -20,51 +21,68 @@ func init() {
 	}()
 }
 
-// How to interpret the benchmark results for:
-//
-// $ make benchmark
-// go test -bench=. -benchmem -count=1 -benchtime=1s
-// goos: linux
-// goarch: amd64
-// pkg: github.com/frobware/comptime
-// cpu: 11th Gen Intel(R) Core(TM) i7-1165G7 @ 2.80GHz
-// BenchmarkParseDurationMultiUnitMode-8	39985408		28.58 ns/op	       0 B/op	       0 allocs/op
-// BenchmarkParseDurationSingleUnitMode-8	87478999		12.92 ns/op	       0 B/op	       0 allocs/op
-// PASS
-// ok	github.com/frobware/comptime	2.323s
-//
-// Here's a breakdown:
-//
-//   - `BenchmarkParseDurationMultiUnitMode-8`: This tells you the
-//     name of the benchmark function that was executed. The `-8`
-//     specifies that the benchmark was run with 8 threads.
-//
-//   - `39985408`: This is the number of iterations that the benchmark
-//     managed to run during its timed execution.
-//
-//   - `28.58 ns/op`: This tells you that each operation (in this
-//     case, a call to `ParseDuration`) took an average of 28.58ns.
-//
-//   - `0 B/op`: This indicates that the function did not allocate any
-//     additional bytes of memory per operation. This is often a
-//     crucial factor in performance-sensitive code, so having 0 here
-//     is generally a good sign.
-//
-//   - `0 allocs/op`: This tells you that the function did not make
-//     any heap allocations per operation. Fewer allocations often lead
-//     to faster code and less pressure on the garbage collector, so
-//     this is also a positive indicator.
-//
-//   - `PASS`: This tells you that the benchmark completed successfully
-//     without any errors.
-//
-//   - `ok github.com/frobware/comptime 2.323s`: This indicates that
-//     the entire test, including setup, tear-down, and the running of
-//     the benchmark, completed in 2.323s.
+// Standard Input Parsing Comparison
 
+// BenchmarkStandardLibraryParseDuration tests the performance of the
+// standard library's time.ParseDuration function with a typical
+// input.
+func BenchmarkStandardLibraryParseDuration(b *testing.B) {
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		_, err := time.ParseDuration("20h31m23s647ms")
+		if err != nil {
+			b.Fatal(err)
+		}
+	}
+}
+
+// BenchmarkComptimeParseStandardInput tests the performance of
+// comptime.ParseDuration with the same input as the standard library
+// benchmark.
+func BenchmarkComptimeParseStandardInput(b *testing.B) {
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		_, err := comptime.ParseDuration("20h31m23s647ms", comptime.Millisecond, comptime.ParseModeMultiUnit, comptime.NoRangeChecking)
+		if err != nil {
+			b.Fatal(err)
+		}
+	}
+}
+
+// Short Duration Parsing Comparison
+
+// BenchmarkStandardLibraryParseDurationShort tests the performance of
+// the standard library's time.ParseDuration function with a short
+// duration input.
+func BenchmarkStandardLibraryParseDurationShort(b *testing.B) {
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		_, err := time.ParseDuration("1h")
+		if err != nil {
+			b.Fatal(err)
+		}
+	}
+}
+
+// BenchmarkParseDurationShort tests the performance of comptime
+// parsing a short duration string.
+func BenchmarkParseDurationShort(b *testing.B) {
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		_, err := comptime.ParseDuration("1h", comptime.Millisecond, comptime.ParseModeMultiUnit, comptime.NoRangeChecking)
+		if err != nil {
+			b.Fatal(err)
+		}
+	}
+}
+
+// Comptime Specific Features
+
+// BenchmarkParseDurationMultiUnitMode tests comptime's performance
+// with a complex duration string including days, which is not
+// supported by the standard library.
 func BenchmarkParseDurationMultiUnitMode(b *testing.B) {
 	b.ResetTimer()
-
 	for i := 0; i < b.N; i++ {
 		_, err := comptime.ParseDuration("24d20h31m23s647ms", comptime.Millisecond, comptime.ParseModeMultiUnit, comptime.NoRangeChecking)
 		if err != nil {
@@ -73,11 +91,28 @@ func BenchmarkParseDurationMultiUnitMode(b *testing.B) {
 	}
 }
 
+// BenchmarkParseDurationSingleUnitMode tests comptime's performance
+// in single-unit mode, demonstrating its flexibility in parsing
+// modes.
 func BenchmarkParseDurationSingleUnitMode(b *testing.B) {
 	b.ResetTimer()
-
 	for i := 0; i < b.N; i++ {
 		_, err := comptime.ParseDuration("2147483647ms", comptime.Millisecond, comptime.ParseModeSingleUnit, comptime.NoRangeChecking)
+		if err != nil {
+			b.Fatal(err)
+		}
+	}
+}
+
+// BenchmarkParseDurationWithRangeChecker tests comptime's performance
+// with a custom range checker, showcasing this unique feature.
+func BenchmarkParseDurationWithRangeChecker(b *testing.B) {
+	checker := func(position int, value time.Duration, totalSoFar time.Duration) bool {
+		return totalSoFar < 30*24*time.Hour // Allow up to 30 days
+	}
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		_, err := comptime.ParseDuration("24d20h31m23s647ms", comptime.Millisecond, comptime.ParseModeMultiUnit, checker)
 		if err != nil {
 			b.Fatal(err)
 		}
