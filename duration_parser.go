@@ -1,25 +1,47 @@
-// Package comptime (composite time) offers functionality for parsing
-// durations, extending the capabilities of the standard library's
-// `time.ParseDuration` function. It introduces support for an
-// additional time unit, 'days' (denoted by 'd'), and enables the
-// parsing of composite durations from a single string, such as
-// '1d5m200ms'.
+// Package comptime provides enhanced duration parsing capabilities,
+// extending the functionality of the standard library's
+// time.ParseDuration to include days.
 //
-// Key Features:
+// Key features and differences from the standard library:
 //
-//   - Supports the following time units: "d" (days), "h" (hours), "m"
-//     (minutes), "s" (seconds), "ms" (milliseconds), and "us"
-//     (microseconds).
+//  1. Additional unit support: Parses 'days' (d) in addition to the
+//     standard library's units (h, m, s, ms, µs, ns).
 //
-//   - Capable of parsing composite durations such as
+//  2. Flexible parsing modes:
+//
+//     - Multi-unit mode: Parses composite strings like
 //     "24d20h31m23s647ms".
 //
-//   - Ensures parsed durations are non-negative.
+//     - Single-unit mode: Ensures only one unit type is present in
+//     the input.
 //
-//   - Custom Range Checking: Allows the user to define their own range
-//     constraints on parsed durations through a BoundsChecker callback.
-//     This enables early termination of the parsing process based on
-//     user-defined limits.
+//  3. Custom range checking: Allows for user-defined duration limit
+//     enforcement during parsing, enabling early termination based on
+//     custom constraints.
+//
+//  4. Default unit specification: Allows specifying a default unit
+//     for values without an explicit unit (e.g., interpreting "500"
+//     as 500ms).
+//
+//  5. Comprehensive error reporting: Provides detailed error
+//     information, including the position and nature of parsing
+//     errors.
+//
+// While the standard library's time.ParseDuration supports composite
+// time strings, comptime offers additional flexibility and features
+// for more complex duration parsing needs.
+//
+// For performance comparisons between comptime and the standard
+// library, please refer to the [BENCHMARKS.md](./BENCHMARKS.md) file
+// in the repository.
+//
+// Example usage:
+//
+//	duration, err := comptime.ParseDuration("24d20h31m23s647ms", comptime.Millisecond, comptime.ParseModeMultiUnit, comptime.NoRangeChecking)
+//	if err != nil {
+//		log.Fatal(err)
+//	}
+//	fmt.Printf("Duration: %v\n", duration)
 package comptime
 
 import (
@@ -53,8 +75,9 @@ const (
 	ParseModeSingleUnit
 )
 
-// ParseMode defines the behavior for interpreting units in a duration
-// string. It decides how many units can be accepted when parsing.
+// ParseMode defines the behaviour for interpreting units in a
+// duration string. It decides how many units can be accepted when
+// parsing.
 type ParseMode int
 
 // Unit is used to represent different time units (day, hour, minute,
