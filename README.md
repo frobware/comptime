@@ -1,13 +1,15 @@
 # comptime: Parse composite time durations, including support for days
 
-The `comptime` package (composite time) extends the capabilities of the standard library's `time.ParseDuration` function. It introduces support for 'days' and enables parsing of composite durations from a single string, such as '1d5m200ms'.
+The `comptime` package (composite time) extends the capabilities of the standard library's `time.ParseDuration` function. It introduces support for 'days', amongst other features.
 
 ## Key Features
 
-- Supports time units: "d" (days), "h" (hours), "m" (minutes), "s" (seconds), "ms" (milliseconds), and "us" (microseconds).
-- Parses composite durations like "24d20h31m23s647ms".
-- Ensures parsed durations are non-negative.
-- Custom Range Checking: Define range constraints on parsed durations through a BoundsChecker callback, enabling early termination based on user-defined limits.
+- Supports 'days' as an additional time unit (denoted by 'd').
+- Flexible parsing modes:
+  - Multi-unit mode for parsing composite strings (e.g., "24d20h31m23s647ms").
+  - Single-unit mode to ensure only one unit type is present.
+- Custom range checking via a callback function, allowing for user-defined limits and early termination.
+- Ability to specify a default unit for values without an explicit unit (e.g., interpreting "500" as 500ms).
 
 ## Performance
 
